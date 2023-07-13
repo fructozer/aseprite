@@ -1,15 +1,16 @@
-name: Update repository
+name: Auto-update
 
 on:
   schedule:
-    - cron: '0 0 * * *' # update every day at 00:00
+    - cron: '*/5 * * * *' # update every day at 00:00
 
 jobs:
   sync:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: tgymnich/fork-sync@v1.8
+      - name: Update repository
+        uses: tgymnich/fork-sync@v1.8
         with:
           owner: aseprite
           base: main
