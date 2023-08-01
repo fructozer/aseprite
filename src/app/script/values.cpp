@@ -312,6 +312,7 @@ FOR_ENUM(app::CelsTarget)
 FOR_ENUM(app::ColorBar::ColorSelector)
 FOR_ENUM(app::SpriteSheetDataFormat)
 FOR_ENUM(app::SpriteSheetType)
+FOR_ENUM(app::TilesetMode)
 FOR_ENUM(app::gen::BgType)
 FOR_ENUM(app::gen::BrushPreview)
 FOR_ENUM(app::gen::BrushType)
@@ -467,37 +468,14 @@ doc::UserData::Variant get_value_from_lua(lua_State* L, int index)
       v = std::string(lua_tostring(L, index));
       break;
 
-    case LUA_TTABLE: {
-      int i = 0;
-      bool isArray = true;
-      if (index < 0)
-        --index;
-      lua_pushnil(L);
-      while (lua_next(L, index) != 0) {
-        if (lua_isinteger(L, -2)) {
-          if (++i != lua_tointeger(L, -2)) {
-            isArray = false;
-            lua_pop(L, 2);  // Pop value and key
-            break;
-          }
-        }
-        else {
-          isArray = false;
-          lua_pop(L, 2);
-          break;
-        }
-        lua_pop(L, 1); // Pop the value, leave the key for lua_next()
-      }
-      if (index < 0)
-        ++index;
-      if (isArray) {
+    case LUA_TTABLE:
+      if (is_array_table(L, index)) {
         v = get_value_from_lua<doc::UserData::Vector>(L, index);
       }
       else {
         v = get_value_from_lua<doc::UserData::Properties>(L, index);
       }
       break;
-    }
 
     case LUA_TUSERDATA: {
       if (auto rect = may_get_obj<gfx::Rect>(L, index)) {
@@ -577,6 +555,29 @@ doc::UserData::Vector get_value_from_lua(lua_State* L, int index)
   }
 
   return v;
+}
+
+bool is_array_table(lua_State* L, int index)
+{
+  if (index < 0)
+    --index;
+
+  int i = 0;
+  lua_pushnil(L);
+  while (lua_next(L, index) != 0) {
+    if (lua_isinteger(L, -2)) {
+      if (++i != lua_tointeger(L, -2)) {
+        lua_pop(L, 2);  // Pop value and key
+        return false;
+      }
+    }
+    else {
+      lua_pop(L, 2);
+      return false;
+    }
+    lua_pop(L, 1); // Pop the value, leave the key for lua_next()
+  }
+  return true;
 }
 
 } // namespace script
